@@ -1,7 +1,24 @@
-# Straw Hat Bot
+# 🏴‍☠️ Straw Hat Bot
 
-A custom Discord bot built in Python for the Straw Hat community.
+A custom Discord bot built with Python and discord.py.
 
-## Features
+## Current Features
 
-Coming soon...
+- `/ping`
+- `/hello`
+- `/about`
+
+## Architecture
+
+- Modular command system
+- Event system
+- Configuration management
+- Discord slash commands
+
+## Technologies
+
+- Python
+- discord.py
+- Discord API
+- Git
+- GitHub
