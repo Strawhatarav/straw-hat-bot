@@ -12,7 +12,8 @@ class General(commands.Cog):
     )
     async def ping(self, interaction: discord.Interaction):
         await interaction.response.send_message(
-            "🏴‍☠️ Pong! Straw Hat is online!"
+            "🏴‍☠️ Pong! Straw Hat is online!",
+            ephemeral=True
         )
 
     @discord.app_commands.command(
@@ -21,7 +22,8 @@ class General(commands.Cog):
     )
     async def hello(self, interaction: discord.Interaction):
         await interaction.response.send_message(
-            "🏴‍☠️ Hello! Straw Hat is here!"
+            "🏴‍☠️ Hello! Straw Hat is here!",
+            ephemeral=True
         )
 
 

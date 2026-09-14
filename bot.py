@@ -2,13 +2,15 @@ import os
 
 import discord
 from discord.ext import commands
+from database.database import initialize_database
+from views.onboarding import OnboardingView
 
 # Load environment variables
 from config.settings import DISCORD_TOKEN, GUILD_ID
 
 # Discord intents
 intents = discord.Intents.default()
-
+intents.members = True
 
 # Create the bot
 class StrawHatBot(commands.Bot):
@@ -20,10 +22,14 @@ class StrawHatBot(commands.Bot):
 
     async def setup_hook(self):
 
+        self.add_view(OnboardingView())
+        
         extensions = [
            "commands.general",
            "commands.utility",
+           "commands.configuration",
            "events.ready",
+           "events.member_events",
         ]
 
         for extension in extensions:
@@ -40,6 +46,10 @@ class StrawHatBot(commands.Bot):
         await self.tree.sync(guild=guild)
 
 
+# Initialize database
+initialize_database()
+
+# Create the bot
 bot = StrawHatBot()
 
 

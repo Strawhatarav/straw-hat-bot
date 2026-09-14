@@ -408,7 +408,8 @@ class Utility(commands.Cog):
         )
     
         await interaction.response.send_message(
-            embed=embed
+            embed=embed,
+            ephemeral=True
         )
 
     @discord.app_commands.command(
@@ -430,7 +431,8 @@ class Utility(commands.Cog):
         )
 
         await interaction.response.send_message(
-            embed=embed
+            embed=embed,
+            ephemeral=True
         )
 
     @discord.app_commands.command(
@@ -467,7 +469,8 @@ class Utility(commands.Cog):
         )
 
         await interaction.response.send_message(
-            embed=embed
+            embed=embed,
+            ephemeral=True
         )
 
     @discord.app_commands.command(
@@ -510,7 +513,8 @@ class Utility(commands.Cog):
         )
 
         await interaction.response.send_message(
-            embed=embed
+            embed=embed,
+            ephemeral=True
         )
 
     @discord.app_commands.command(
@@ -560,7 +564,8 @@ class Utility(commands.Cog):
         )
 
         await interaction.response.send_message(
-            embed=embed
+            embed=embed,
+            ephemeral=True
         )
 
     @discord.app_commands.command(
@@ -603,7 +608,8 @@ class Utility(commands.Cog):
     
         await interaction.response.send_message(
             embed=embed,
-            view=HelpView()
+            view=HelpView(),
+            ephemeral=True
         )
 
 async def setup(bot):
