@@ -24,6 +24,17 @@ def initialize_database():
         """
     )
 
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS self_roles (
+            guild_id INTEGER NOT NULL,
+            role_id INTEGER NOT NULL,
+            category TEXT NOT NULL,
+            PRIMARY KEY (guild_id, role_id)
+        )
+        """
+    )
+
     connection.commit()
     connection.close()
 
@@ -153,3 +164,102 @@ def update_goodbye_message(guild_id, message):
 
     connection.commit()
     connection.close()                 
+
+def add_self_role(
+    guild_id: int,
+    role_id: int,
+    category: str
+):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        INSERT OR REPLACE INTO self_roles
+        (guild_id, role_id, category)
+        VALUES (?, ?, ?)
+        """,
+        (guild_id, role_id, category)
+    )
+
+    connection.commit()
+    connection.close()
+
+def remove_self_role(
+    guild_id: int,
+    role_id: int
+):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        DELETE FROM self_roles
+        WHERE guild_id = ?
+        AND role_id = ?
+        """,
+        (guild_id, role_id)
+    )
+
+    connection.commit()
+    connection.close()
+
+def is_self_role(
+    guild_id: int,
+    role_id: int
+) -> bool:
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT 1
+        FROM self_roles
+        WHERE guild_id = ?
+        AND role_id = ?
+        """,
+        (guild_id, role_id)
+    )
+
+    result = cursor.fetchone()
+
+    connection.close()
+
+    return result is not None
+
+def get_self_roles(
+    guild_id: int,
+    category: str | None = None
+):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    if category is None:
+        cursor.execute(
+            """
+            SELECT role_id, category
+            FROM self_roles
+            WHERE guild_id = ?
+            """,
+            (guild_id,)
+        )
+    else:
+        cursor.execute(
+            """
+            SELECT role_id, category
+            FROM self_roles
+            WHERE guild_id = ?
+            AND category = ?
+            """,
+            (guild_id, category)
+        )
+
+    results = cursor.fetchall()
+
+    connection.close()
+
+    return results

@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 from database.database import initialize_database
 from views.onboarding import OnboardingView
+from services.role_views import RolePanelView
 
 # Load environment variables
 from config.settings import DISCORD_TOKEN, GUILD_ID
@@ -28,6 +29,7 @@ class StrawHatBot(commands.Bot):
            "commands.general",
            "commands.utility",
            "commands.configuration",
+           "commands.roles",
            "events.ready",
            "events.member_events",
         ]
@@ -45,6 +47,22 @@ class StrawHatBot(commands.Bot):
         self.tree.copy_global_to(guild=guild)
         await self.tree.sync(guild=guild)
 
+        # Register the permanent role panel buttons
+        self.add_view(
+            RolePanelView()
+        )
+    
+        guild = discord.Object(
+            id=int(GUILD_ID)
+        )
+    
+        self.tree.copy_global_to(
+            guild=guild
+        )
+    
+        await self.tree.sync(
+            guild=guild
+        )
 
 # Initialize database
 initialize_database()

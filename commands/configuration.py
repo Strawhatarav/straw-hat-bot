@@ -10,7 +10,11 @@ from database.database import (
     update_welcome_message,
     update_goodbye_message,
     get_guild_config,
+    add_self_role,
+    remove_self_role,
+    get_self_roles
 )
+from services.role_service import can_manage_role
 
 
 class Configuration(
@@ -284,6 +288,165 @@ class Configuration(
             ephemeral=True
         )
 
+    roles = app_commands.Group(
+        name="roles",
+        description="Configure self-assignable roles."
+    )
+
+    @roles.command(
+        name="add",
+        description="Make a role self-assignable."
+    )
+    @app_commands.describe(
+        role="The role members will be able to select.",
+        category="The role category."
+    )
+    @app_commands.choices(
+        category=[
+            app_commands.Choice(
+                name="🎮 Games",
+                value="games"
+            ),
+            app_commands.Choice(
+                name="🎵 Interests",
+                value="interests"
+            ),
+            app_commands.Choice(
+                name="🔔 Notifications",
+                value="notifications"
+            ),
+        ]
+    )
+    @app_commands.checks.has_permissions(
+        manage_guild=True
+    )
+    async def add(
+        self,
+        interaction: discord.Interaction,
+        role: discord.Role,
+        category: app_commands.Choice[str]
+    ):
+
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True
+            )
+            return
+
+        can_manage, reason = can_manage_role(
+            interaction.guild,
+            role
+        )
+
+        if not can_manage:
+            await interaction.response.send_message(
+                f"❌ {reason}",
+                ephemeral=True
+            )
+            return
+
+        add_self_role(
+            interaction.guild.id,
+            role.id,
+            category.value
+        )
+
+        await interaction.response.send_message(
+            (
+                f"✅ {role.mention} is now a "
+                f"self-assignable role in "
+                f"**{category.name}**."
+            ),
+            ephemeral=True
+        )
+
+    @roles.command(
+        name="remove",
+        description="Remove a role from self-assignment."
+    )
+    @app_commands.describe(
+        role="The role to remove."
+    )
+    @app_commands.checks.has_permissions(
+        manage_guild=True
+    )
+    async def remove(
+        self,
+        interaction: discord.Interaction,
+        role: discord.Role
+    ):
+
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True
+            )
+            return
+
+        remove_self_role(
+            interaction.guild.id,
+            role.id
+        )
+
+        await interaction.response.send_message(
+            f"✅ {role.mention} is no longer self-assignable.",
+            ephemeral=True
+        )
+
+    @roles.command(
+        name="list",
+        description="List all self-assignable roles."
+    )
+    @app_commands.checks.has_permissions(
+        manage_guild=True
+    )
+    async def list_roles(
+        self,
+        interaction: discord.Interaction
+    ):
+
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True
+            )
+            return
+
+        role_data = get_self_roles(
+            interaction.guild.id
+        )
+
+        if not role_data:
+            await interaction.response.send_message(
+                "No self-assignable roles are configured yet.",
+                ephemeral=True
+            )
+            return
+
+        lines = []
+
+        for role_id, category in role_data:
+
+            role = interaction.guild.get_role(role_id)
+
+            if role is not None:
+                lines.append(
+                    f"• {role.mention} — `{category}`"
+                )
+
+        embed = discord.Embed(
+            title="🎭 Self-Assignable Roles",
+            description="\n".join(lines),
+            color=discord.Color.from_rgb(
+                190, 35, 45
+            )
+        )
+
+        await interaction.response.send_message(
+            embed=embed,
+            ephemeral=True
+        )
 
 async def setup(bot):
     await bot.add_cog(Configuration(bot))
