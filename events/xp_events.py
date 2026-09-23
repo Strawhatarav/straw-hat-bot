@@ -7,54 +7,41 @@ import time
 
 import discord
 from discord.ext import commands
-from config.banners import BOUNTY_POSTER_BANNER
 
-from config.xp_config import (
-    get_level_title,
-)
+from config.banners import BOUNTY_POSTER_BANNER
+from config.xp_config import get_level_title
 from services.xp_service import (
     add_xp,
     get_xp_settings,
     is_channel_ignored,
-    apply_inactivity_decay,
+
     get_level_reward,
 )
 
 
 class XPEvents(commands.Cog):
     """
-    Handles XP-related Discord events.
+    Handles Bounty-related Discord events.
     """
 
     def __init__(self, bot):
         self.bot = bot
 
-        # ----------------------------------------------------
+
         # Temporary in-memory cooldown storage.
         #
         # Format:
-        #
-        # (guild_id, user_id) → timestamp
-        # ----------------------------------------------------
-
+        # (guild_id, user_id) -> timestamp
         self.cooldowns = {}
-
-
-# Backward-compatible alias for older references.
-BountyEvents = XPEvents
-
-
+        
     # ========================================================
     # MESSAGE EVENT
     # ========================================================
 
     @commands.Cog.listener()
-    async def on_message(
-        self,
-        message: discord.Message
-    ):
+    async def on_message(self, message: discord.Message):
         """
-        Award XP when a user sends an eligible message.
+        Award Berries when a user sends an eligible message.
         """
 
         # ----------------------------------------------------
@@ -63,8 +50,7 @@ BountyEvents = XPEvents
 
         if message.author.bot:
             return
-
-
+        
         # ----------------------------------------------------
         # Ignore direct messages
         # ----------------------------------------------------
@@ -81,24 +67,22 @@ BountyEvents = XPEvents
 
 
         # ----------------------------------------------------
-        # Get XP settings
+        # Get Bounty settings
         # ----------------------------------------------------
 
-        settings = get_xp_settings(
-            guild_id
-        )
+        settings = get_xp_settings(guild_id)
 
         (
             enabled,
             min_xp,
             max_xp,
             cooldown,
-            levelup_channel_id
+            bounty_channel_id,
         ) = settings
 
 
         # ----------------------------------------------------
-        # Check whether XP is enabled
+        # Check whether Bounty is enabled
         # ----------------------------------------------------
 
         if not enabled:
@@ -109,10 +93,7 @@ BountyEvents = XPEvents
         # Check ignored channels
         # ----------------------------------------------------
 
-        if is_channel_ignored(
-            guild_id,
-            channel_id
-        ):
+        if is_channel_ignored(guild_id, channel_id):
             return
 
 
@@ -122,54 +103,48 @@ BountyEvents = XPEvents
 
         current_time = time.time()
 
-        cooldown_key = (
-            guild_id,
-            user_id
-        )
+        cooldown_key = (guild_id, user_id)
 
         last_xp_time = self.cooldowns.get(
             cooldown_key,
-            0
+            0,
         )
 
 
-        if (
-            current_time - last_xp_time
-            < cooldown
-        ):
+        if current_time - last_xp_time < cooldown:
             return
 
 
         # ----------------------------------------------------
-        # Start a new XP cooldown
+        # Start a new Bounty cooldown
         # ----------------------------------------------------
 
         self.cooldowns[cooldown_key] = current_time
 
 
         # ----------------------------------------------------
-        # Generate random XP
+        # Generate random Berries
         # ----------------------------------------------------
 
         amount = random.randint(
             min_xp,
-            max_xp
+            max_xp,
         )
 
 
         # ----------------------------------------------------
-        # Add XP to database
+        # Add Berries to database
         # ----------------------------------------------------
 
         (
             old_xp,
             new_xp,
             old_level,
-            new_level
+            new_level,
         ) = add_xp(
             guild_id,
             user_id,
-            amount
+            amount,
         )
 
 
@@ -180,197 +155,197 @@ BountyEvents = XPEvents
         if new_level > old_level:
 
             await self.handle_level_up(
-                message,
-                old_level,
-                new_level,
-                levelup_channel_id
+                message=message,
+                old_level=old_level,
+                new_level=new_level,
+                new_bounty=new_xp,
+                bounty_channel_id=bounty_channel_id,
             )
 
 
-    # ============================================================
+    # ========================================================
     # LEVEL-UP / BOUNTY POSTER
-    # ============================================================
-    
+    # ========================================================
+
     async def handle_level_up(
         self,
-        message,
-        old_level,
-        new_level,
-        bounty_channel_id
+        message: discord.Message,
+        old_level: int,
+        new_level: int,
+        new_bounty: int,
+        bounty_channel_id,
     ):
-    
+        """
+        Handle level rewards and the public Bounty poster.
+        """
+
         guild = message.guild
         member = message.author
-    
-        # --------------------------------------------------------
-        # NO BOUNTY CHANNEL = NO PUBLIC ANNOUNCEMENT
-        # --------------------------------------------------------
-    
-        if bounty_channel_id is None:
-            return
-    
-        # --------------------------------------------------------
-        # Find the configured Bounty Channel.
-        # --------------------------------------------------------
-    
-        channel = guild.get_channel(
-            bounty_channel_id
-        )
-    
-        if channel is None:
-            return
-    
-        # --------------------------------------------------------
-        # Check whether the channel can receive messages.
-        # --------------------------------------------------------
-    
-        if not isinstance(
-            channel,
-            discord.TextChannel
-        ):
-            return
-    
-        # --------------------------------------------------------
-        # Handle level rewards.
-        # --------------------------------------------------------
-    
+
+        # ----------------------------------------------------
+        # Handle level rewards first.
+        #
+        # Rewards should work even when no Bounty Channel
+        # has been configured.
+        # ----------------------------------------------------
+
         rewards = []
-    
+
         for level in range(
             old_level + 1,
-            new_level + 1
+            new_level + 1,
         ):
-    
+
             role_id = get_level_reward(
                 guild.id,
-                level
+                level,
             )
-    
+
             if role_id is None:
                 continue
-    
-            role = guild.get_role(
-                role_id
-            )
-    
+
+            role = guild.get_role(role_id)
+
             if role is None:
                 continue
-    
+
             bot_member = guild.me
-    
-            # ----------------------------------------------------
-            # Make sure the bot is allowed to assign the role.
-            # ----------------------------------------------------
-    
+
+            # Bot member could not be resolved.
             if bot_member is None:
                 continue
-    
+
+            # Bot cannot manage this role.
             if role >= bot_member.top_role:
                 continue
-    
+
+            # User already has this role.
             if role in member.roles:
                 continue
-    
+
             try:
-    
+
                 await member.add_roles(
                     role,
-                    reason=(
-                        f"Bounty Level {level} reward"
-                    )
+                    reason=f"Bounty Level {level} reward",
                 )
-    
+
                 rewards.append(
                     f"🎖️ {role.mention}"
                 )
-    
+
             except (
                 discord.Forbidden,
-                discord.HTTPException
+                discord.HTTPException,
             ):
-                pass
-    
-        # --------------------------------------------------------
-        # ONE PUBLIC BOUNTY POSTER
-        # --------------------------------------------------------
-        #
-        # If someone jumps from Level 4 → Level 7,
-        # we don't send three posters.
-        #
-        # We send ONE poster for the new highest level.
-        # --------------------------------------------------------
-    
-        title = get_level_title(
-            new_level
+                continue
+
+        # ----------------------------------------------------
+        # No Bounty Channel = no public announcement.
+        # ----------------------------------------------------
+
+        if bounty_channel_id is None:
+            return
+
+        # ----------------------------------------------------
+        # Find the configured Bounty Channel.
+        # ----------------------------------------------------
+
+        channel = guild.get_channel(
+            bounty_channel_id
         )
-    
-        # --------------------------------------------------------
+
+        if channel is None:
+            return
+
+        # ----------------------------------------------------
+        # Make sure this is a text channel.
+        # ----------------------------------------------------
+
+        if not isinstance(
+            channel,
+            discord.TextChannel,
+        ):
+            return
+
+        # ----------------------------------------------------
+        # Get the title for the new level.
+        # ----------------------------------------------------
+
+        title = get_level_title(new_level)
+
+        # ----------------------------------------------------
         # Main Bounty Poster Embed
-        # --------------------------------------------------------
-    
+        # ----------------------------------------------------
+
         embed = discord.Embed(
             title="🏴‍☠️ NEW BOUNTY",
             description=(
                 f"## {member.display_name}\n\n"
-                f"**WANTED**\n"
-                f"*DEAD OR ALIVE*\n\n"
-                f"⚔️ **Level {new_level}**\n"
+                "**WANTED**\n"
+                "*DEAD OR ALIVE*\n\n"
+                f"☠️ **Bounty**\n"
+                f"**{new_bounty:,} Berries**\n\n"
+                f"⚔️ **Level**\n"
+                f"Level {new_level}\n\n"
+                f"🔥 **Title**\n"
                 f"**{title}**"
             ),
             color=discord.Color.from_rgb(
                 220,
                 38,
-                38
-            )
+                38,
+            ),
         )
-    
-        # --------------------------------------------------------
+
+        # ----------------------------------------------------
         # Bounty poster image
-        # --------------------------------------------------------
-    
+        # ----------------------------------------------------
+
         embed.set_image(
             url=BOUNTY_POSTER_BANNER
         )
-    
-        # --------------------------------------------------------
-        # Reward field
-        # --------------------------------------------------------
-    
+
+        # ----------------------------------------------------
+        # Level reward field
+        # ----------------------------------------------------
+
         if rewards:
-    
+
             embed.add_field(
                 name="🎁 Bounty Reward",
                 value="\n".join(rewards),
-                inline=False
+                inline=False,
             )
-    
-        # --------------------------------------------------------
+
+        # ----------------------------------------------------
         # Footer
-        # --------------------------------------------------------
-    
+        # ----------------------------------------------------
+
         embed.set_footer(
             text="Straw Hat • Bounty Board"
         )
-    
-        # --------------------------------------------------------
-        # PUBLIC MESSAGE
+
+        # ----------------------------------------------------
+        # Public message
         #
-        # NO BUTTONS
-        # NO DROPDOWNS
-        # NO VIEW
-        # --------------------------------------------------------
-    
+        # No buttons.
+        # No dropdowns.
+        # No interactive view.
+        # ----------------------------------------------------
+
         await channel.send(
             embed=embed
         )
-    
+
+
 # ============================================================
 # EXTENSION SETUP
 # ============================================================
 
 async def setup(bot):
     """
-    Load the XP event Cog into the bot.
+    Load the Bounty event Cog into the bot.
     """
 
     await bot.add_cog(

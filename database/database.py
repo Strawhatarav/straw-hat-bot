@@ -2,6 +2,7 @@ import sqlite3
 from pathlib import Path
 
 DATABASE_PATH = Path("database/strawhat.db")
+DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 def get_connection():
     return sqlite3.connect(DATABASE_PATH)
@@ -74,7 +75,8 @@ def initialize_database():
             user_id INTEGER NOT NULL,
             xp INTEGER NOT NULL DEFAULT 0,
             level INTEGER NOT NULL DEFAULT 0,
-
+            last_message_at REAL,
+            last_decay_at REAL,
             PRIMARY KEY (guild_id, user_id)
         )
     """)
@@ -87,17 +89,11 @@ def initialize_database():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS xp_settings (
             guild_id INTEGER PRIMARY KEY,
-
             enabled INTEGER NOT NULL DEFAULT 1,
-
             min_xp INTEGER NOT NULL DEFAULT 15,
-
             max_xp INTEGER NOT NULL DEFAULT 25,
-
             cooldown INTEGER NOT NULL DEFAULT 60,
-
-            levelup_channel_id INTEGER
-
+            levelup_channel_id INTEGER,
             decay_enabled INTEGER NOT NULL DEFAULT 1,
             decay_grace_days INTEGER NOT NULL DEFAULT 14,
             decay_percent INTEGER NOT NULL DEFAULT 5,
@@ -106,6 +102,50 @@ def initialize_database():
         )
     """)
 
+
+    # ========================================================
+    # BOUNTY DATABASE MIGRATIONS
+    # ========================================================
+
+    # CREATE TABLE IF NOT EXISTS does not add new columns to an
+    # existing SQLite table, so we add the Phase 8 columns here.
+
+    cursor.execute("PRAGMA table_info(user_xp)")
+    user_xp_columns = {
+        column[1]
+        for column in cursor.fetchall()
+    }
+
+    if "last_message_at" not in user_xp_columns:
+        cursor.execute(
+            "ALTER TABLE user_xp ADD COLUMN last_message_at REAL"
+        )
+
+    if "last_decay_at" not in user_xp_columns:
+        cursor.execute(
+            "ALTER TABLE user_xp ADD COLUMN last_decay_at REAL"
+        )
+
+    cursor.execute("PRAGMA table_info(xp_settings)")
+    xp_settings_columns = {
+        column[1]
+        for column in cursor.fetchall()
+    }
+
+    xp_setting_defaults = {
+        "decay_enabled": "INTEGER NOT NULL DEFAULT 1",
+        "decay_grace_days": "INTEGER NOT NULL DEFAULT 14",
+        "decay_percent": "INTEGER NOT NULL DEFAULT 5",
+        "decay_interval_days": "INTEGER NOT NULL DEFAULT 7",
+        "max_decay": "INTEGER NOT NULL DEFAULT 500",
+    }
+
+    for column_name, definition in xp_setting_defaults.items():
+        if column_name not in xp_settings_columns:
+            cursor.execute(
+                f"ALTER TABLE xp_settings ADD COLUMN "
+                f"{column_name} {definition}"
+            )
 
     # ========================================================
     # IGNORED CHANNELS TABLE
@@ -240,7 +280,7 @@ def update_welcome_message(guild_id, message):
     cursor.execute(
         """
         UPDATE guild_config
-        SET welcome_message = ?
+        SET goodbye_message = ?
         WHERE guild_id = ?
         """,
         (message, guild_id)
@@ -257,7 +297,7 @@ def update_goodbye_message(guild_id, message):
     cursor.execute(
         """
         UPDATE guild_config
-        SET welcome_message = ?
+        SET goodbye_message = ?
         WHERE guild_id = ?
         """,
         (message, guild_id)

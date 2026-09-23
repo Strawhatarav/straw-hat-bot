@@ -3,6 +3,7 @@
 # ============================================================
 
 import sqlite3
+import time
 
 from database.database import DATABASE_PATH
 from config.xp_config import (
@@ -100,7 +101,7 @@ def create_user_if_not_exists(
         (
             guild_id,
             user_id,
-            bounty,
+            xp,
             level
         )
         VALUES (?, ?, 0, 0)
@@ -194,7 +195,7 @@ def add_xp(
         (
             guild_id,
             user_id,
-            bounty,
+            xp,
             level
         )
         VALUES (?, ?, 0, 0)
@@ -250,13 +251,16 @@ def add_xp(
         """
         UPDATE user_xp
         SET xp = ?,
-            level = ?
+            level = ?,
+            last_message_at = ?,
+            last_decay_at = NULL
         WHERE guild_id = ?
         AND user_id = ?
         """,
         (
             new_xp,
             new_level,
+            time.time(),
             guild_id,
             user_id
         )
@@ -465,6 +469,15 @@ def get_xp_settings(
 
     connection.close()
 
+    if result is None:
+        return (
+            1,
+            DEFAULT_MIN_BOUNTY,
+            DEFAULT_MAX_BOUNTY,
+            DEFAULT_COOLDOWN,
+            None,
+        )
+
     return result
 
 
@@ -521,6 +534,124 @@ def update_xp_setting(
     connection.commit()
 
     connection.close()
+
+# ============================================================
+# INACTIVITY DECAY
+# ============================================================
+
+def apply_inactivity_decay(guild_id: int):
+    """
+    Apply configured inactivity decay to inactive users.
+
+    Returns:
+        A list of tuples:
+        (user_id, old_bounty, new_bounty)
+    """
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            decay_enabled,
+            decay_grace_days,
+            decay_percent,
+            decay_interval_days,
+            max_decay
+        FROM xp_settings
+        WHERE guild_id = ?
+        """,
+        (guild_id,),
+    )
+
+    settings = cursor.fetchone()
+
+    if settings is None:
+        connection.close()
+        return []
+
+    (
+        decay_enabled,
+        grace_days,
+        decay_percent,
+        interval_days,
+        max_decay,
+    ) = settings
+
+    if not decay_enabled:
+        connection.close()
+        return []
+
+    now = time.time()
+    grace_seconds = grace_days * 86400
+    interval_seconds = interval_days * 86400
+
+    cursor.execute(
+        """
+        SELECT
+            user_id,
+            xp,
+            last_message_at,
+            last_decay_at
+        FROM user_xp
+        WHERE guild_id = ?
+        AND xp > 0
+        """,
+        (guild_id,),
+    )
+
+    users = cursor.fetchall()
+    decayed_users = []
+
+    for user_id, bounty, last_message_at, last_decay_at in users:
+        if last_message_at is None:
+            continue
+
+        inactive_for = now - last_message_at
+
+        if inactive_for < grace_seconds:
+            continue
+
+        if last_decay_at is not None:
+            if now - last_decay_at < interval_seconds:
+                continue
+
+        decay_amount = int(bounty * (decay_percent / 100))
+
+        if decay_amount <= 0:
+            continue
+
+        decay_amount = min(decay_amount, max_decay)
+        new_bounty = max(0, bounty - decay_amount)
+
+        cursor.execute(
+            """
+            UPDATE user_xp
+            SET xp = ?,
+                level = ?,
+                last_decay_at = ?
+            WHERE guild_id = ?
+            AND user_id = ?
+            """,
+            (
+                new_bounty,
+                calculate_level(new_bounty),
+                now,
+                guild_id,
+                user_id,
+            ),
+        )
+
+        decayed_users.append(
+            (user_id, bounty, new_bounty)
+        )
+
+    connection.commit()
+    connection.close()
+
+    return decayed_users
+
 
 # ============================================================
 # IGNORED CHANNELS
