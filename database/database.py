@@ -1,5 +1,7 @@
 import sqlite3
 from pathlib import Path
+from config.achievement_config import DEFAULT_ACHIEVEMENTS
+from config.settings import GUILD_ID
 
 DATABASE_PATH = Path("database/strawhat.db")
 DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -175,7 +177,98 @@ def initialize_database():
         )
     """)
 
+    # ============================================================
+    # ACHIEVEMENT TABLES
+    # ============================================================
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS achievements (
+            achievement_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL,
+            achievement_key TEXT NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL,
+            category TEXT NOT NULL,
+            rarity TEXT NOT NULL,
+            hidden INTEGER NOT NULL DEFAULT 0,
+            requirement_type TEXT NOT NULL,
+            requirement_value INTEGER NOT NULL DEFAULT 1,
+            reward_bounty INTEGER NOT NULL DEFAULT 0,
+    
+            UNIQUE(guild_id, achievement_key)
+        )
+    """)
+    
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_achievements (
+            guild_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            achievement_id INTEGER NOT NULL,
+            unlocked_at REAL NOT NULL,
+    
+            PRIMARY KEY (
+                guild_id,
+                user_id,
+                achievement_id
+            ),
+    
+            FOREIGN KEY (achievement_id)
+            REFERENCES achievements(achievement_id)
+        )
+    """)
+    
+    
+    # ------------------------------------------------------------
+    # Tracks user statistics needed by achievements.
+    # ------------------------------------------------------------
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS achievement_stats (
+            guild_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+    
+            message_count INTEGER NOT NULL DEFAULT 0,
+            starboard_posts INTEGER NOT NULL DEFAULT 0,
+    
+            PRIMARY KEY (guild_id, user_id)
+        )
+    """)
 
+    # ============================================================
+    # INSERT DEFAULT ACHIEVEMENTS
+    # ============================================================
+    
+    for achievement in DEFAULT_ACHIEVEMENTS:
+    
+        cursor.execute("""
+            INSERT OR IGNORE INTO achievements (
+                guild_id,
+                achievement_key,
+                name,
+                description,
+                category,
+                rarity,
+                hidden,
+                requirement_type,
+                requirement_value,
+                reward_bounty
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            GUILD_ID,
+            achievement["key"],
+            achievement["name"],
+            achievement["description"],
+            achievement["category"],
+            achievement["rarity"],
+            int(achievement["hidden"]),
+            achievement["requirement_type"],
+            achievement["requirement_value"],
+            achievement["reward_bounty"],
+        ))
+
+    
     connection.commit()
     connection.close()
 
