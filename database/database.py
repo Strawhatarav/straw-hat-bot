@@ -268,6 +268,40 @@ def initialize_database():
             achievement["reward_bounty"],
         ))
 
+    # ============================================================
+    # STARBOARD SETTINGS
+    # ============================================================
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS starboard_settings (
+            guild_id INTEGER PRIMARY KEY,
+            channel_id INTEGER,
+            threshold INTEGER NOT NULL DEFAULT 3,
+            enabled INTEGER NOT NULL DEFAULT 0
+        )
+    """)
+    
+    
+    # ============================================================
+    # STARBOARD MESSAGE MAPPING
+    # ============================================================
+    # This prevents duplicate Starboard posts.
+    # ============================================================
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS starboard_messages (
+            guild_id INTEGER NOT NULL,
+            original_message_id INTEGER NOT NULL,
+            starboard_message_id INTEGER NOT NULL,
+            star_count INTEGER NOT NULL DEFAULT 0,
+    
+            PRIMARY KEY (
+                guild_id,
+                original_message_id
+            )
+        )
+    """)
+
     
     connection.commit()
     connection.close()
