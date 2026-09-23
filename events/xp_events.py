@@ -18,6 +18,11 @@ from services.xp_service import (
     get_level_reward,
 )
 
+from services.achievement_service import (
+    get_achievement_by_key,
+    unlock_achievement
+)
+
 
 class XPEvents(commands.Cog):
     """
@@ -338,6 +343,38 @@ class XPEvents(commands.Cog):
             embed=embed
         )
 
+
+    async def check_level_achievements(
+        member,
+        new_level
+    ):
+    
+        achievements_to_check = {
+            10: "level_10",
+            50: "level_50",
+        }
+    
+        key = achievements_to_check.get(new_level)
+    
+        if key is None:
+            return []
+    
+        achievement = get_achievement_by_key(
+            member.guild.id,
+            key
+        )
+    
+        if achievement is None:
+            return []
+    
+        if unlock_achievement(
+            member.guild.id,
+            member.id,
+            achievement[0]
+        ):
+            return [achievement]
+    
+        return []
 
 # ============================================================
 # EXTENSION SETUP
