@@ -35,6 +35,107 @@ def initialize_database():
         """
     )
 
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS polls (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL,
+            channel_id INTEGER NOT NULL,
+            message_id INTEGER,
+            creator_id INTEGER NOT NULL,
+            question TEXT NOT NULL,
+            options TEXT NOT NULL,
+            multiple_choice INTEGER NOT NULL DEFAULT 0,
+            anonymous INTEGER NOT NULL DEFAULT 0,
+            ends_at TEXT,
+            closed INTEGER NOT NULL DEFAULT 0
+        )
+        """
+    )
+    
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS poll_votes (
+            poll_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            option_index INTEGER NOT NULL,
+            PRIMARY KEY (poll_id, user_id, option_index)
+        )
+        """
+    )
+
+    # ========================================================
+    # XP USER TABLE
+    # ========================================================
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_xp (
+            guild_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            xp INTEGER NOT NULL DEFAULT 0,
+            level INTEGER NOT NULL DEFAULT 0,
+
+            PRIMARY KEY (guild_id, user_id)
+        )
+    """)
+
+
+    # ========================================================
+    # XP SETTINGS TABLE
+    # ========================================================
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS xp_settings (
+            guild_id INTEGER PRIMARY KEY,
+
+            enabled INTEGER NOT NULL DEFAULT 1,
+
+            min_xp INTEGER NOT NULL DEFAULT 15,
+
+            max_xp INTEGER NOT NULL DEFAULT 25,
+
+            cooldown INTEGER NOT NULL DEFAULT 60,
+
+            levelup_channel_id INTEGER
+
+            decay_enabled INTEGER NOT NULL DEFAULT 1,
+            decay_grace_days INTEGER NOT NULL DEFAULT 14,
+            decay_percent INTEGER NOT NULL DEFAULT 5,
+            decay_interval_days INTEGER NOT NULL DEFAULT 7,
+            max_decay INTEGER NOT NULL DEFAULT 500
+        )
+    """)
+
+
+    # ========================================================
+    # IGNORED CHANNELS TABLE
+    # ========================================================
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS xp_ignored_channels (
+            guild_id INTEGER NOT NULL,
+            channel_id INTEGER NOT NULL,
+
+            PRIMARY KEY (guild_id, channel_id)
+        )
+    """)
+
+
+    # ========================================================
+    # LEVEL REWARDS TABLE
+    # ========================================================
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS level_rewards (
+            guild_id INTEGER NOT NULL,
+            level INTEGER NOT NULL,
+            role_id INTEGER NOT NULL,
+
+            PRIMARY KEY (guild_id, level)
+        )
+    """)
+
+
     connection.commit()
     connection.close()
 
