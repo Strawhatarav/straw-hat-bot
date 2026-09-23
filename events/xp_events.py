@@ -180,6 +180,91 @@ class XPEvents(commands.Cog):
         new_bounty: int,
         bounty_channel_id,
     ):
+
+        # ========================================================
+        # ACHIEVEMENT CHECK
+        # ========================================================
+    
+        # Level 10 achievement
+        if new_level >= 10:
+    
+            achievement = get_achievement_by_key(
+                member.guild.id,
+                "level_10"
+            )
+    
+            if achievement:
+    
+                newly_unlocked = unlock_achievement(
+                    member.guild.id,
+                    member.id,
+                    achievement[0]
+                )
+    
+                if newly_unlocked:
+                    print(
+                        f"Achievement unlocked: "
+                        f"{achievement[2]} "
+                        f"for {member.id}"
+                    )
+    
+    
+        # Level 50 achievement
+        if new_level >= 50:
+    
+            achievement = get_achievement_by_key(
+                member.guild.id,
+                "level_50"
+            )
+    
+            if achievement:
+    
+                newly_unlocked = unlock_achievement(
+                    member.guild.id,
+                    member.id,
+                    achievement[0]
+                )
+    
+                if newly_unlocked:
+                    print(
+                        f"Achievement unlocked: "
+                        f"{achievement[2]} "
+                        f"for {member.id}"
+                    )        
+
+        # ========================================================
+        # LEVEL ACHIEVEMENTS
+        # ========================================================
+        
+        level_achievements = {
+            10: "level_10",
+            50: "level_50",
+        }
+        
+        for required_level, achievement_key in level_achievements.items():
+        
+            # User has reached the required level.
+            if new_level >= required_level:
+        
+                achievement = get_achievement_by_key(
+                    member.guild.id,
+                    achievement_key
+                )
+        
+                if achievement:
+        
+                    newly_unlocked = unlock_achievement(
+                        member.guild.id,
+                        member.id,
+                        achievement[0]
+                    )
+        
+                    if newly_unlocked:
+                        print(
+                            f"{member} unlocked "
+                            f"{achievement[2]}"
+                        )
+
         """
         Handle level rewards and the public Bounty poster.
         """
