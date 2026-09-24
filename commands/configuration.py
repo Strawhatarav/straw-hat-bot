@@ -641,7 +641,6 @@ class Configuration(
         )
 
 
-
     roles = app_commands.Group(
         name="roles",
         description="Configure self-assignable roles."
