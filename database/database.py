@@ -302,7 +302,61 @@ def initialize_database():
         )
     """)
 
-    
+    # ========================================================
+    # BIRTHDAY SYSTEM
+    # ========================================================
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS birthdays (
+            guild_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            month INTEGER NOT NULL,
+            day INTEGER NOT NULL,
+
+            PRIMARY KEY (guild_id, user_id)
+        )
+    """)
+
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS birthday_settings (
+            guild_id INTEGER PRIMARY KEY,
+
+            enabled INTEGER NOT NULL DEFAULT 1,
+
+            channel_id INTEGER,
+
+            role_id INTEGER,
+
+            celebration_hour INTEGER NOT NULL DEFAULT 9,
+
+            timezone TEXT NOT NULL DEFAULT 'Asia/Kolkata'
+        )
+    """)
+
+    # ========================================================
+    # BIRTHDAY NOTIFICATION TRACKING
+    # ========================================================
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS birthday_notifications (
+            guild_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            year INTEGER NOT NULL,
+
+            birthday_sent INTEGER NOT NULL DEFAULT 0,
+            reminder_7_sent INTEGER NOT NULL DEFAULT 0,
+            reminder_1_sent INTEGER NOT NULL DEFAULT 0,
+
+            PRIMARY KEY (
+                guild_id,
+                user_id,
+                year
+            )
+        )
+    """)
+
+
     connection.commit()
     connection.close()
 
@@ -531,3 +585,441 @@ def get_self_roles(
     connection.close()
 
     return results
+
+# ============================================================
+# BIRTHDAY FUNCTIONS
+# ============================================================
+
+def set_birthday(
+    guild_id: int,
+    user_id: int,
+    month: int,
+    day: int
+):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO birthdays
+        (
+            guild_id,
+            user_id,
+            month,
+            day
+        )
+        VALUES (?, ?, ?, ?)
+
+        ON CONFLICT(guild_id, user_id)
+        DO UPDATE SET
+            month = excluded.month,
+            day = excluded.day
+        """,
+        (
+            guild_id,
+            user_id,
+            month,
+            day
+        )
+    )
+
+    connection.commit()
+    connection.close()
+
+def remove_birthday(
+    guild_id: int,
+    user_id: int
+):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        DELETE FROM birthdays
+        WHERE guild_id = ?
+        AND user_id = ?
+        """,
+        (
+            guild_id,
+            user_id
+        )
+    )
+
+    connection.commit()
+    connection.close()
+
+def get_birthday(
+    guild_id: int,
+    user_id: int
+):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            month,
+            day
+        FROM birthdays
+        WHERE guild_id = ?
+        AND user_id = ?
+        """,
+        (
+            guild_id,
+            user_id
+        )
+    )
+
+    result = cursor.fetchone()
+
+    connection.close()
+
+    return result
+
+def get_all_birthdays():
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            guild_id,
+            user_id,
+            month,
+            day
+        FROM birthdays
+        """
+    )
+    
+
+    results = cursor.fetchall()
+
+    connection.close()
+
+    return results
+
+# ============================================================
+# BIRTHDAY SETTINGS
+# ============================================================
+
+def create_birthday_settings(guild_id: int):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO birthday_settings
+        (
+            guild_id
+        )
+        VALUES (?)
+        """,
+        (
+            guild_id,
+        )
+    )
+
+    connection.commit()
+    connection.close()
+
+def get_birthday_settings(guild_id: int):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            guild_id,
+            enabled,
+            channel_id,
+            role_id,
+            celebration_hour,
+            timezone
+        FROM birthday_settings
+        WHERE guild_id = ?
+        """,
+        (
+            guild_id,
+        )
+    )
+
+    result = cursor.fetchone()
+
+    connection.close()
+
+    return result
+
+def update_birthday_enabled(
+    guild_id: int,
+    enabled: bool
+):
+
+    create_birthday_settings(guild_id)
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE birthday_settings
+        SET enabled = ?
+        WHERE guild_id = ?
+        """,
+        (
+            1 if enabled else 0,
+            guild_id
+        )
+    )
+
+    connection.commit()
+    connection.close()
+
+def update_birthday_channel(
+    guild_id: int,
+    channel_id: int
+):
+
+    create_birthday_settings(guild_id)
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE birthday_settings
+        SET channel_id = ?
+        WHERE guild_id = ?
+        """,
+        (
+            channel_id,
+            guild_id
+        )
+    )
+
+    connection.commit()
+    connection.close()
+
+def update_birthday_role(
+    guild_id: int,
+    role_id: int
+):
+
+    create_birthday_settings(guild_id)
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE birthday_settings
+        SET role_id = ?
+        WHERE guild_id = ?
+        """,
+        (
+            role_id,
+            guild_id
+        )
+    )
+
+    connection.commit()
+    connection.close()
+
+def update_birthday_time(
+    guild_id: int,
+    hour: int
+):
+
+    create_birthday_settings(guild_id)
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE birthday_settings
+        SET celebration_hour = ?
+        WHERE guild_id = ?
+        """,
+        (
+            hour,
+            guild_id
+        )
+    )
+
+    connection.commit()
+    connection.close()
+
+def update_birthday_timezone(
+    guild_id: int,
+    timezone: str
+):
+
+    create_birthday_settings(guild_id)
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE birthday_settings
+        SET timezone = ?
+        WHERE guild_id = ?
+        """,
+        (
+            timezone,
+            guild_id
+        )
+    )
+
+    connection.commit()
+    connection.close()
+
+def get_birthday_notification(
+    guild_id: int,
+    user_id: int,
+    year: int
+):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            birthday_sent,
+            reminder_7_sent,
+            reminder_1_sent
+        FROM birthday_notifications
+        WHERE guild_id = ?
+        AND user_id = ?
+        AND year = ?
+        """,
+        (
+            guild_id,
+            user_id,
+            year
+        )
+    )
+
+    result = cursor.fetchone()
+
+    connection.close()
+
+    return result
+
+def create_birthday_notification(
+    guild_id: int,
+    user_id: int,
+    year: int
+):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO birthday_notifications
+        (
+            guild_id,
+            user_id,
+            year
+        )
+        VALUES (?, ?, ?)
+        """,
+        (
+            guild_id,
+            user_id,
+            year
+        )
+    )
+
+    connection.commit()
+    connection.close()
+
+def mark_birthday_sent(
+    guild_id: int,
+    user_id: int,
+    year: int
+):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE birthday_notifications
+        SET birthday_sent = 1
+        WHERE guild_id = ?
+        AND user_id = ?
+        AND year = ?
+        """,
+        (
+            guild_id,
+            user_id,
+            year
+        )
+    )
+
+    connection.commit()
+    connection.close()
+
+def mark_reminder_7_sent(
+    guild_id: int,
+    user_id: int,
+    year: int
+):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE birthday_notifications
+        SET reminder_7_sent = 1
+        WHERE guild_id = ?
+        AND user_id = ?
+        AND year = ?
+        """,
+        (
+            guild_id,
+            user_id,
+            year
+        )
+    )
+
+    connection.commit()
+    connection.close()
+
+def mark_reminder_1_sent(
+    guild_id: int,
+    user_id: int,
+    year: int
+):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE birthday_notifications
+        SET reminder_1_sent = 1
+        WHERE guild_id = ?
+        AND user_id = ?
+        AND year = ?
+        """,
+        (
+            guild_id,
+            user_id,
+            year
+        )
+    )
+
+    connection.commit()
+    connection.close()
+
