@@ -7,6 +7,7 @@ from services.role_views import RolePanelView
 from services import poll_service
 from services.poll_views import PollView
 from config.settings import DISCORD_TOKEN, GUILD_ID
+from services.reminder_scheduler import ReminderScheduler
 
 
 # Discord intents
@@ -22,6 +23,10 @@ class StrawHatBot(commands.Bot):
         super().__init__(
             command_prefix="!",
             intents=intents
+        )
+
+        self.reminder_scheduler = ReminderScheduler(
+            self
         )
 
     async def setup_hook(self):
@@ -42,6 +47,7 @@ class StrawHatBot(commands.Bot):
             "commands.achievements",
             "commands.starboard",
             "commands.birthday",
+            "commands.reminders",
             "events.ready",
             "events.member_events",
             "events.xp_events",
@@ -111,7 +117,16 @@ class StrawHatBot(commands.Bot):
         print(
             "✅ Slash commands synced!"
         )
-
+    
+        # ========================================================
+        # START REMINDER SYSTEM
+        # ========================================================
+    
+        self.reminder_scheduler.start()
+        
+        print(
+            "⏰ Reminder scheduler started."
+        )
 
 # Initialize database
 initialize_database()
