@@ -12,7 +12,14 @@ from database.database import (
     get_guild_config,
     add_self_role,
     remove_self_role,
-    get_self_roles
+    get_self_roles,
+    create_birthday_settings,
+    update_birthday_enabled,
+    update_birthday_channel,
+    update_birthday_role,
+    update_birthday_time,
+    update_birthday_timezone,
+    get_birthday_settings,
 )
 from services.role_service import can_manage_role
 
@@ -287,6 +294,353 @@ class Configuration(
             embed=embed,
             ephemeral=True
         )
+
+    @app_commands.command(
+        name="birthday-channel",
+        description="Set the channel for birthday announcements."
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def birthday_channel(
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel
+    ):
+
+        guild = interaction.guild
+
+        if guild is None:
+
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True
+            )
+
+            return
+
+
+        create_birthday_settings(
+            guild.id
+        )
+
+        update_birthday_channel(
+            guild.id,
+            channel.id
+        )
+
+
+        await interaction.response.send_message(
+            f"🎂 Birthday announcements will now be sent in {channel.mention}.",
+            ephemeral=True
+        )
+
+    @app_commands.command(
+        name="birthday-role",
+        description="Set the temporary birthday role."
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def birthday_role(
+        self,
+        interaction: discord.Interaction,
+        role: discord.Role
+    ):
+
+        guild = interaction.guild
+
+        if guild is None:
+
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True
+            )
+
+            return
+
+
+        create_birthday_settings(
+            guild.id
+        )
+
+        update_birthday_role(
+            guild.id,
+            role.id
+        )
+
+
+        await interaction.response.send_message(
+            f"🎂 Birthday role set to {role.mention}.",
+            ephemeral=True
+        )
+
+    @app_commands.command(
+        name="birthday-enable",
+        description="Enable or disable the birthday system."
+    )
+    @app_commands.describe(
+        enabled="Whether the birthday system should be enabled."
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def birthday_enable(
+        self,
+        interaction: discord.Interaction,
+        enabled: bool
+    ):
+
+        guild = interaction.guild
+
+        if guild is None:
+
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True
+            )
+
+            return
+
+
+        update_birthday_enabled(
+            guild.id,
+            enabled
+        )
+
+
+        status = (
+            "enabled"
+            if enabled
+            else "disabled"
+        )
+
+
+        await interaction.response.send_message(
+            f"🎂 Birthday system **{status}**.",
+            ephemeral=True
+        )
+
+    @app_commands.command(
+        name="birthday-time",
+        description="Set the hour for birthday announcements."
+    )
+    @app_commands.describe(
+        hour="Hour from 0 to 23."
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def birthday_time(
+        self,
+        interaction: discord.Interaction,
+        hour: int
+    ):
+
+        guild = interaction.guild
+
+        if guild is None:
+
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True
+            )
+
+            return
+
+
+        if hour < 0 or hour > 23:
+
+            await interaction.response.send_message(
+                "❌ Hour must be between **0 and 23**.",
+                ephemeral=True
+            )
+
+            return
+
+
+        update_birthday_time(
+            guild.id,
+            hour
+        )
+
+
+        await interaction.response.send_message(
+            f"🕘 Birthday announcements will be processed at **{hour:02d}:00**.",
+            ephemeral=True
+        )
+
+    @app_commands.command(
+        name="birthday-timezone",
+        description="Set the timezone used by the birthday system."
+    )
+    @app_commands.describe(
+        timezone="IANA timezone, for example Asia/Kolkata."
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def birthday_timezone(
+        self,
+        interaction: discord.Interaction,
+        timezone: str
+    ):
+
+        guild = interaction.guild
+
+        if guild is None:
+
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True
+            )
+
+            return
+
+
+        from zoneinfo import ZoneInfo
+
+        try:
+
+            ZoneInfo(timezone)
+
+        except Exception:
+
+            await interaction.response.send_message(
+                "❌ Invalid timezone.\n\n"
+                "Example: `Asia/Kolkata`",
+                ephemeral=True
+            )
+
+            return
+
+
+        update_birthday_timezone(
+            guild.id,
+            timezone
+        )
+
+
+        await interaction.response.send_message(
+            f"🌎 Birthday timezone set to **{timezone}**.",
+            ephemeral=True
+        )
+
+    @app_commands.command(
+        name="birthday-view",
+        description="View the birthday system configuration."
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def birthday_view(
+        self,
+        interaction: discord.Interaction
+    ):
+
+        guild = interaction.guild
+
+        if guild is None:
+
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True
+            )
+
+            return
+
+
+        create_birthday_settings(
+            guild.id
+        )
+
+        settings = get_birthday_settings(
+            guild.id
+        )
+
+
+        (
+            guild_id,
+            enabled,
+            channel_id,
+            role_id,
+            celebration_hour,
+            timezone
+        ) = settings
+
+
+        channel = (
+            guild.get_channel(channel_id)
+            if channel_id
+            else None
+        )
+
+        role = (
+            guild.get_role(role_id)
+            if role_id
+            else None
+        )
+
+
+        embed = discord.Embed(
+            title="🎂 Birthday Configuration",
+            description=(
+                f"Birthday settings for **{guild.name}**."
+            ),
+            color=discord.Color.from_rgb(
+                236,
+                72,
+                153
+            )
+        )
+
+
+        embed.add_field(
+            name="🎉 System",
+            value=(
+                "Enabled"
+                if enabled
+                else "Disabled"
+            ),
+            inline=True
+        )
+
+
+        embed.add_field(
+            name="📢 Channel",
+            value=(
+                channel.mention
+                if channel
+                else "Not configured"
+            ),
+            inline=True
+        )
+
+
+        embed.add_field(
+            name="🎂 Role",
+            value=(
+                role.mention
+                if role
+                else "Not configured"
+            ),
+            inline=True
+        )
+
+
+        embed.add_field(
+            name="🕘 Time",
+            value=f"{celebration_hour:02d}:00",
+            inline=True
+        )
+
+
+        embed.add_field(
+            name="🌎 Timezone",
+            value=timezone,
+            inline=True
+        )
+
+
+        embed.set_footer(
+            text="Straw Hat • Birthday Configuration"
+        )
+
+
+        await interaction.response.send_message(
+            embed=embed,
+            ephemeral=True
+        )
+
+
 
     roles = app_commands.Group(
         name="roles",
