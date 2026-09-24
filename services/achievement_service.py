@@ -287,3 +287,84 @@ def get_user_achievements(
     conn.close()
 
     return rows
+
+# ============================================================
+# PROCESS MESSAGE ACHIEVEMENTS
+# ============================================================
+
+def process_message_achievements(
+    guild_id: int,
+    user_id: int
+):
+    """
+    Process achievements related to sending messages.
+
+    Returns:
+        List of achievement keys that were newly unlocked.
+    """
+
+    unlocked = []
+
+    # --------------------------------------------------------
+    # Increase message counter
+    # --------------------------------------------------------
+
+    increment_message_count(
+        guild_id,
+        user_id
+    )
+
+    message_count = get_message_count(
+        guild_id,
+        user_id
+    )
+
+    # --------------------------------------------------------
+    # First Message
+    # --------------------------------------------------------
+
+    if message_count >= 1:
+
+        achievement = get_achievement_by_key(
+            guild_id,
+            "first_message"
+        )
+
+        if achievement:
+
+            newly_unlocked = unlock_achievement(
+                guild_id,
+                user_id,
+                achievement[0]
+            )
+
+            if newly_unlocked:
+                unlocked.append(
+                    "first_message"
+                )
+
+    # --------------------------------------------------------
+    # 100 Messages
+    # --------------------------------------------------------
+
+    if message_count >= 100:
+
+        achievement = get_achievement_by_key(
+            guild_id,
+            "message_100"
+        )
+
+        if achievement:
+
+            newly_unlocked = unlock_achievement(
+                guild_id,
+                user_id,
+                achievement[0]
+            )
+
+            if newly_unlocked:
+                unlocked.append(
+                    "message_100"
+                )
+
+    return unlocked

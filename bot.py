@@ -40,7 +40,7 @@ class StrawHatBot(commands.Bot):
             "commands.polls",
             "commands.leveling",
             "commands.achievements",
-            "commands.starboard"
+            "commands.starboard",
             "events.ready",
             "events.member_events",
             "events.xp_events",
