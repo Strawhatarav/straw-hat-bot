@@ -41,11 +41,13 @@ class StrawHatBot(commands.Bot):
             "commands.leveling",
             "commands.achievements",
             "commands.starboard",
+            "commands.birthday",
             "events.ready",
             "events.member_events",
             "events.xp_events",
             "events.achievement_events",
             "events.starboard_events",
+            "events.birthday_events",
         ]
 
         for extension in extensions:
