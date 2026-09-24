@@ -356,6 +356,67 @@ def initialize_database():
         )
     """)
 
+    # ========================================================
+    # REMINDER & SCHEDULE SYSTEM
+    # ========================================================
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reminders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            user_id INTEGER NOT NULL,
+
+            guild_id INTEGER,
+
+            channel_id INTEGER,
+
+            message TEXT NOT NULL,
+
+            reminder_type TEXT NOT NULL,
+
+            scheduled_at TEXT NOT NULL,
+
+            timezone TEXT NOT NULL DEFAULT 'UTC',
+
+            recurring INTEGER NOT NULL DEFAULT 0,
+
+            recurrence TEXT,
+
+            active INTEGER NOT NULL DEFAULT 1,
+
+            created_at TEXT NOT NULL
+        )
+    """)
+
+    # --------------------------------------------------------
+    # INDEXES
+    # --------------------------------------------------------
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_reminders_scheduled
+        ON reminders(scheduled_at, active)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_reminders_user
+        ON reminders(user_id, active)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_reminders_guild
+        ON reminders(guild_id, active)
+    """)
+
+    # ========================================================
+    # USER TIMEZONES
+    # ========================================================
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_timezones (
+            user_id INTEGER PRIMARY KEY,
+            timezone TEXT NOT NULL
+        )
+    """)
 
     connection.commit()
     connection.close()
