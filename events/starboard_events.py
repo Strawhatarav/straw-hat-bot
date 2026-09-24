@@ -211,6 +211,31 @@ class StarboardEvents(commands.Cog):
                     star_count
                 )
 
+            # -----------------------------------------------
+            # Achievement: Viral Post
+            # -----------------------------------------------
+            
+            if star_count >= 10:
+            
+                achievement = get_achievement_by_key(
+                    guild_id,
+                    "viral_post"
+                )
+            
+                if achievement:
+            
+                    newly_unlocked = unlock_achievement(
+                        guild_id,
+                        message.author.id,
+                        achievement[0]
+                    )
+            
+                    if newly_unlocked:
+                        print(
+                            f"{message.author} unlocked "
+                            f"{achievement[2]}"
+                        )
+
                 return
 
 
@@ -252,13 +277,75 @@ class StarboardEvents(commands.Cog):
             # -----------------------------------------------
             # Save mapping.
             # -----------------------------------------------
-
+            
             save_starboard_message(
                 guild_id,
                 message.id,
                 starboard_message.id,
                 star_count
             )
+            
+            # -----------------------------------------------
+            # Achievement: First Starboard
+            # -----------------------------------------------
+            
+            increment_starboard_posts(
+                guild_id,
+                message.author.id
+            )
+            
+            starboard_posts = get_starboard_posts(
+                guild_id,
+                message.author.id
+            )
+            
+            # First Starboard post
+            if starboard_posts >= 1:
+            
+                achievement = get_achievement_by_key(
+                    guild_id,
+                    "first_starboard"
+                )
+            
+                if achievement:
+            
+                    newly_unlocked = unlock_achievement(
+                        guild_id,
+                        message.author.id,
+                        achievement[0]
+                    )
+            
+                    if newly_unlocked:
+                        print(
+                            f"{message.author} unlocked "
+                            f"{achievement[2]}"
+                        )
+            
+            
+            # -----------------------------------------------
+            # Achievement: 10 Starboard Posts
+            # -----------------------------------------------
+            
+            if starboard_posts >= 10:
+            
+                achievement = get_achievement_by_key(
+                    guild_id,
+                    "star_10"
+                )
+            
+                if achievement:
+            
+                    newly_unlocked = unlock_achievement(
+                        guild_id,
+                        message.author.id,
+                        achievement[0]
+                    )
+            
+                    if newly_unlocked:
+                        print(
+                            f"{message.author} unlocked "
+                            f"{achievement[2]}"
+                        )
 
 
         # ====================================================
