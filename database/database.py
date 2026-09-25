@@ -418,6 +418,38 @@ def initialize_database():
         )
     """)
 
+    # ========================================================
+    # TICKET SYSTEM
+    # ========================================================
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS ticket_config (
+            guild_id INTEGER PRIMARY KEY,
+            panel_channel_id INTEGER,
+            ticket_category_id INTEGER,
+            staff_role_id INTEGER,
+            log_channel_id INTEGER,
+            enabled INTEGER NOT NULL DEFAULT 1
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tickets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL,
+            ticket_number INTEGER NOT NULL,
+            channel_id INTEGER NOT NULL UNIQUE,
+            user_id INTEGER NOT NULL,
+            category TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'open',
+            claimed_by INTEGER,
+            created_at TEXT NOT NULL,
+            closed_at TEXT,
+            closed_by INTEGER,
+            UNIQUE(guild_id, ticket_number)
+        )
+    """)
+
     connection.commit()
     connection.close()
 
