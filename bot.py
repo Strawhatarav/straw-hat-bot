@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from database.database import initialize_database
 from views.onboarding import OnboardingView
+from views.ticket_views import register_ticket_views
 from services.role_views import RolePanelView
 from services import poll_service
 from services.poll_views import PollView
@@ -36,6 +37,8 @@ class StrawHatBot(commands.Bot):
             OnboardingView()
         )
 
+        register_ticket_views(self)
+
         # Load bot extensions
         extensions = [
             "commands.general",
@@ -48,6 +51,7 @@ class StrawHatBot(commands.Bot):
             "commands.starboard",
             "commands.birthday",
             "commands.reminders",
+            "commands.tickets",
             "events.ready",
             "events.member_events",
             "events.xp_events",
