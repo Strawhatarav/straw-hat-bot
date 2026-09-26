@@ -14,7 +14,7 @@ from services.reminder_scheduler import ReminderScheduler
 # Discord intents
 intents = discord.Intents.default()
 intents.members = True
-
+intents.voice_states = True
 
 # Create the bot
 class StrawHatBot(commands.Bot):
@@ -52,12 +52,14 @@ class StrawHatBot(commands.Bot):
             "commands.birthday",
             "commands.reminders",
             "commands.tickets",
+            "commands.voice",
             "events.ready",
             "events.member_events",
             "events.xp_events",
             "events.achievement_events",
             "events.starboard_events",
             "events.birthday_events",
+            "events.voice_events",
         ]
 
         for extension in extensions:
