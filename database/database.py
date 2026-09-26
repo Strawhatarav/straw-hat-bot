@@ -450,6 +450,23 @@ def initialize_database():
         )
     """)
 
+    # ========================================================
+    # TEMPORARY VOICE CHANNELS
+    # ========================================================
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS temporary_voice_channels (
+            guild_id INTEGER NOT NULL,
+            channel_id INTEGER PRIMARY KEY,
+            owner_id INTEGER NOT NULL,
+            join_order TEXT NOT NULL,
+            locked INTEGER NOT NULL DEFAULT 0,
+            user_limit INTEGER NOT NULL DEFAULT 0
+        )
+        """
+    )
+
     connection.commit()
     connection.close()
 
