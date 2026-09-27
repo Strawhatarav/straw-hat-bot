@@ -467,6 +467,77 @@ def initialize_database():
         """
     )
 
+    # ========================================================
+    # GIVEAWAY SYSTEM
+    # ========================================================
+
+    cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS giveaways (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id INTEGER NOT NULL,
+        channel_id INTEGER NOT NULL,
+        message_id INTEGER,
+        prize TEXT NOT NULL,
+        host_id INTEGER NOT NULL,
+        winner_count INTEGER NOT NULL,
+        started_at INTEGER NOT NULL,
+        ends_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        ended_at INTEGER
+    )
+    """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS giveaway_entries (
+            giveaway_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            entered_at INTEGER NOT NULL,
+            PRIMARY KEY (giveaway_id, user_id),
+            FOREIGN KEY (giveaway_id)
+                REFERENCES giveaways(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS giveaway_winners (
+            giveaway_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            selected_at INTEGER NOT NULL,
+            PRIMARY KEY (giveaway_id, user_id),
+            FOREIGN KEY (giveaway_id)
+                REFERENCES giveaways(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_giveaways_status_ends
+        ON giveaways(status, ends_at)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_giveaway_entries_user
+        ON giveaway_entries(user_id)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_giveaway_winners_giveaway
+        ON giveaway_winners(giveaway_id)
+        """
+    )
+
     connection.commit()
     connection.close()
 
