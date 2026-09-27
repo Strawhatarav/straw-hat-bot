@@ -9,6 +9,8 @@ from services import poll_service
 from services.poll_views import PollView
 from config.settings import DISCORD_TOKEN, GUILD_ID
 from services.reminder_scheduler import ReminderScheduler
+from database import giveaway_db
+from services.giveaway_views import GiveawayView
 
 
 # Discord intents
@@ -39,6 +41,12 @@ class StrawHatBot(commands.Bot):
 
         register_ticket_views(self)
 
+        for giveaway in giveaway_db.get_active_giveaways():
+            self.add_view(
+                GiveawayView(giveaway[0]),
+                message_id=giveaway[3],
+            )        
+
         # Load bot extensions
         extensions = [
             "commands.general",
@@ -53,6 +61,7 @@ class StrawHatBot(commands.Bot):
             "commands.reminders",
             "commands.tickets",
             "commands.voice",
+            "commands.giveaways",
             "events.ready",
             "events.member_events",
             "events.xp_events",

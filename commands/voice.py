@@ -479,9 +479,9 @@ async def apply_lock_permissions(
         name=MODERATOR_ROLE_NAME
     )
 
-    crewmate_role = discord.utils.get(
+    admin_role = discord.utils.get(
         guild.roles,
-        name=CREWMATE_ROLE_NAME
+        name=ADMIN_ROLE_NAME
     )
 
     if moderator_role:
@@ -491,10 +491,10 @@ async def apply_lock_permissions(
             connect=True
         )
 
-    if crewmate_role:
+    if admin_role:
 
         await channel.set_permissions(
-            crewmate_role,
+            admin_role,
             connect=True
         )
 
@@ -518,9 +518,9 @@ async def apply_unlock_permissions(
         name=MODERATOR_ROLE_NAME
     )
 
-    crewmate_role = discord.utils.get(
+    admin_role = discord.utils.get(
         guild.roles,
-        name=CREWMATE_ROLE_NAME
+        name=ADMIN_ROLE_NAME
     )
 
     if moderator_role:
@@ -530,10 +530,10 @@ async def apply_unlock_permissions(
             connect=True
         )
 
-    if crewmate_role:
+    if admin_role:
 
         await channel.set_permissions(
-            crewmate_role,
+            admin_role,
             connect=True
         )
 
