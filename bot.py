@@ -62,6 +62,7 @@ class StrawHatBot(commands.Bot):
             "commands.tickets",
             "commands.voice",
             "commands.giveaways",
+            "commands.external",
             "events.ready",
             "events.member_events",
             "events.xp_events",
