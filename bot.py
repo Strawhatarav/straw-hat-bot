@@ -11,12 +11,13 @@ from config.settings import DISCORD_TOKEN, GUILD_ID
 from services.reminder_scheduler import ReminderScheduler
 from database import giveaway_db
 from services.giveaway_views import GiveawayView
-
+from database.moderation_db import initialize_moderation_database
 
 # Discord intents
 intents = discord.Intents.default()
 intents.members = True
 intents.voice_states = True
+intents.message_content = True
 
 # Create the bot
 class StrawHatBot(commands.Bot):
@@ -63,6 +64,7 @@ class StrawHatBot(commands.Bot):
             "commands.voice",
             "commands.giveaways",
             "commands.external",
+            "commands.moderation",
             "events.ready",
             "events.member_events",
             "events.xp_events",
@@ -70,6 +72,7 @@ class StrawHatBot(commands.Bot):
             "events.starboard_events",
             "events.birthday_events",
             "events.voice_events",
+            "events.moderation_events",
         ]
 
         for extension in extensions:
@@ -146,6 +149,7 @@ class StrawHatBot(commands.Bot):
 
 # Initialize database
 initialize_database()
+initialize_moderation_database()
 
 
 # Create the bot
